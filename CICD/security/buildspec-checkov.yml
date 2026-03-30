@@ -1,0 +1,14 @@
+# セキュリティ脆弱性や構成ミスを検出する
+version: 0.2
+phases:
+  install:
+    runtime-versions:
+      python: 3.10
+    commands:
+      - sudo apt update -y
+      - sudo apt install yarn -y
+      - pip install checkov
+  build:
+    commands:
+      - cd src
+      - checkov -f checkov_template.yaml

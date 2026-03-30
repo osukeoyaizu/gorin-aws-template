@@ -1,0 +1,15 @@
+version: 0.0
+
+Resources:
+  - MyLambdaFunction:
+      Type: AWS::Lambda::Function
+      Properties:
+        Name: "lab2-deploy-lambda"
+        Alias: "prod"
+        CurrentVersion: "1" # prod（エイリアス）が指すバージョン
+        TargetVersion: "2" # 新しいバージョン、これに切り替えるということ
+
+# prodの指すバージョンが間違ってたりすると以下のエラーになるので注意
+# The deployment failed because the AppSpec file that specifies the AWS Lambda deployment configuration is missing or has an invalid configuration. 
+# The input AppSpec file is a not well-formed yaml. The template cannot be parsed.
+# CurrentVersion と TargetVersionが同じでもエラーにならない。デプロイを動かしたいだけなら同じにしておけばよい。

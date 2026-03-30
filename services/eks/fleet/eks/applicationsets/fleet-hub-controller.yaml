@@ -1,0 +1,65 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: fleet-members-secrets
+  namespace: argocd
+spec:
+  goTemplate: true
+  # goTemplateOptions: ["missingkey=error"]  # 任意
+  generators:
+    - git:
+        repoURL: https://git-codecommit.us-east-1.amazonaws.com/v1/repos/oyaizu-eks
+        revision: master
+        directories:
+          - path: members/*
+  template:
+    metadata:
+      name: 'fleet-member-secret-{{ .path.basenameNormalized }}'
+    spec:
+      project: default
+      source:
+        repoURL: https://git-codecommit.us-east-1.amazonaws.com/v1/repos/oyaizu-eks
+        targetRevision: master
+        path: '{{ .path.path }}'
+      destination:
+        # Hub（Argo CD が動いているクラスター）に適用するなら "in-cluster" でOK。
+        # 別名（例: oyaizu-eks-hub）で登録して使うなら、その「クラスター名」を必ず Argo CD に登録すること。
+        name: in-cluster
+        namespace: fleet-system
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+---
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: fleet-members-init
+  namespace: argocd
+spec:
+  goTemplate: true
+  # goTemplateOptions: ["missingkey=error"]
+  generators:
+    - git:
+        repoURL: https://git-codecommit.us-east-1.amazonaws.com/v1/repos/oyaizu-eks
+        revision: master
+        directories:
+          - path: members/*
+  template:
+    metadata:
+      name: 'fleet-member-init-{{ .path.basenameNormalized }}'
+    spec:
+      project: default
+      source:
+        repoURL: https://git-codecommit.us-east-1.amazonaws.com/v1/repos/oyaizu-eks
+        targetRevision: master
+        path: '{{ .path.path }}/manifests'
+      destination:
+        # Member（Spoke）側クラスターにデプロイしたいので、Argo CD に
+        # クラスター名 = ディレクトリ名（{{ .path.basename }}）で登録されていることが前提。
+        name: '{{ .path.basename }}'
+        namespace: kube-system
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true

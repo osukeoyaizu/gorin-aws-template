@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: oyaizu-namespace
+  name: oyaizu-deployment
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: oyaizu-app
+  replicas: 2
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: oyaizu-app
+    spec:
+      serviceAccountName: oyaizu-serviceaccount #コンテナがAWSサービスにアクセスする際に必要
+      containers:
+      - image: 123456789000.dkr.ecr.us-east-1.amazonaws.com/oyaizu@sha256:59a4e218f78113f3659ad12829dfab7011314b92d8f296caf9658ae30f30501c
+        env:
+        - name: TABLE
+          value: oyaizu
+        resources:
+          limits:
+            memory: "700Mi"  #Fargateはメモリ予約に 256 MB追加される
+            cpu: "0.5"
+          requests:
+            memory: "700Mi"
+            cpu: "0.5"
+        imagePullPolicy: Always
+        name: oyaizu-app
+        ports:
+        - containerPort: 8080

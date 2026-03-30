@@ -1,0 +1,28 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: oyaizu
+  name: lab2-deployment
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: lab2-app
+  replicas: 3
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: lab2-app
+    spec:
+      containers:
+      - image: <イメージURI>:latest  #コンテナイメージを指定する
+        resources:
+          limits:
+            memory: "700Mi"  #Fargateはメモリ予約に 256 MB追加される
+            cpu: "0.5"
+          requests:
+            memory: "700Mi"
+            cpu: "0.5"
+        imagePullPolicy: Always
+        name: lab2-app
+        ports:
+        - containerPort: 80

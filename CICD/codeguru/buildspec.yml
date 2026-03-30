@@ -1,0 +1,41 @@
+version: 0.1
+
+phases:
+  build:
+    commands:
+      - |
+        echo Build started on `date`
+        dt=$(date +%F-%H%M%S)
+        typeParam="RepositoryAnalysis={RepositoryHead={BranchName=${REPOSITORY_BRANCH}}}"
+        echo $typeParam
+        codeReviewArn=$(aws codeguru-reviewer create-code-review --repository-association-arn $CODEGURU_ASSOCIATION --type $typeParam --name oyaizu-app-analysis-$dt | jq -r '.CodeReview.CodeReviewArn')
+        echo "Waiting for code review results: $codeReviewArn..."
+
+        codeReviewState='Pending'
+        while [ $codeReviewState == 'Pending' ];
+        do
+          sleep 5
+          codeReviewResult=$(aws codeguru-reviewer describe-code-review --code-review-arn=$codeReviewArn)
+          codeReviewState=$(echo $codeReviewResult | jq -r '.CodeReview.State')
+          echo "Scan in progress. Current status: $codeReviewState"
+        done
+
+        if [ $codeReviewState == 'Completed' ];
+        then
+          codeReviewFindings=$(echo $codeReviewResult | jq -r '.CodeReview.Metrics.FindingsCount')
+          echo "Code review $codeReviewArn completed successfully with $codeReviewFindings findings. You may now check CodeGuru Reviewer dashboard to see the detailed results"
+        elif [ $codeReviewState == 'Failed' ];
+        then
+          echo "Code review $codeReviewArn failed, you may check the reason in CodeGuru Reviewer dashboard"
+        else
+          echo "Code review $codeReviewArn returned an unhandled status, failing build"
+          exit 1;
+        fi
+
+        echo Build completed on `date`
+
+
+
+# CODEGURU_ASSOCIATION = arn:aws:codeguru-reviewer:<region_id>:<account_id>:association:<association_id>
+# CODEGURU_REPO_NAME = <codecommit_repository_name>
+# REPOSITORY_BRANCH = <reviewed_branch_name>

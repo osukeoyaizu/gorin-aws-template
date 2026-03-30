@@ -1,0 +1,26 @@
+# docker/Dockerfile
+FROM public.ecr.aws/lts/ubuntu:22.04
+
+# Python とビルドツール
+RUN apt-get update && apt-get install -y \
+    python3 python3-pip python3-dev build-essential \
+        && rm -rf /var/lib/apt/lists/*
+
+# 作業ディレクトリ（SageMaker の慣例）
+WORKDIR /opt/ml/code
+
+# 依存関係
+COPY requirements-train.txt .
+RUN pip3 install --no-cache-dir -r requirements-train.txt
+
+# 学習スクリプト
+COPY src/train.py .
+
+# ロケールなど
+ENV PYTHONUNBUFFERED=1 \
+    LC_ALL=C.UTF-8 \
+        LANG=C.UTF-8
+
+# SageMaker はこの ENTRYPOINT を実行
+ENTRYPOINT ["python3", "train.py"]
+

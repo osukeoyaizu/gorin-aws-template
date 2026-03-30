@@ -1,0 +1,8 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: fleet-system
+resources:
+  - fleet-hub-secrets.yaml
+commonLabels:
+  app.kubernetes.io/part-of: eks-fleet
+  app.kubernetes.io/component: hub

@@ -1,0 +1,6 @@
+## CodePipelineで直接デプロイ
+CodeCommitにlambda_function.pyをアップロードする
+
+CodePipelineのデプロイステージでLambda関数を指定する
+
+※Lambda関数とエイリアスは先に作成しておく必要がある

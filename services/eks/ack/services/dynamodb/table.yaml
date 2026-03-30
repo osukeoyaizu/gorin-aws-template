@@ -1,0 +1,18 @@
+apiVersion: dynamodb.services.k8s.aws/v1alpha1
+kind: Table
+metadata:
+  name: oyaizu-table
+spec:
+  tableName: oyaizu-table
+  # # オンデマンドの場合
+  # billingMode: PAY_PER_REQUEST
+  billingMode: PROVISIONED
+  provisionedThroughput:
+    readCapacityUnits: 5
+    writeCapacityUnits: 5
+  attributeDefinitions:
+    - attributeName: id
+      attributeType: S
+  keySchema:
+    - attributeName: id
+      keyType: HASH

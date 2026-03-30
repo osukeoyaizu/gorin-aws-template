@@ -1,0 +1,5 @@
+deployのLambdaに必要な権限
+
+sagemaker:*
+S3FullAccess
+iam:Passrole

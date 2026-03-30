@@ -1,0 +1,66 @@
+# .github/workflows/deploy.yml
+name: Build and Deploy with GitOps
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    permissions:
+      id-token: write        # OIDC 用（AWS AssumeRole）
+      contents: write        # manifest を commit & push するために必須
+
+    env:
+      AWS_REGION: ap-southeast-1
+      IAM_ROLE_ARN: arn:aws:iam::{アカウントID}:role/github-actions
+      ECR_REGISTRY: {アカウントID}.dkr.ecr.ap-southeast-1.amazonaws.com
+      ECR_REPOSITORY: app-repo
+      KUSTOMIZE_OVERLAY: manifest/overlays/kustomization.yaml
+
+    steps:
+      # ソース取得
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # version.txt からタグ読み込み（唯一の真実）
+      - name: Read version.txt
+        run: |
+          TAG=$(cat version.txt)
+          echo "TAG=${TAG}" >> $GITHUB_ENV
+          echo "Using image tag: ${TAG}"
+
+      # AWS 認証（OIDC）
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.IAM_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      # ECR ログイン
+      - name: Login to Amazon ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      # Docker ビルド & ECR プッシュ
+      - name: Build and push Docker image
+        run: |
+          docker build -t ${ECR_REPOSITORY}:${TAG} -f docker/Dockerfile .
+          docker tag ${ECR_REPOSITORY}:${TAG} ${ECR_REGISTRY}/${ECR_REPOSITORY}:${TAG}
+          docker push ${ECR_REGISTRY}/${ECR_REPOSITORY}:${TAG}
+
+      # Kustomize overlay の newTag を version.txt の値で更新
+      - name: Update kustomize image tag
+        run: |
+          sed -i "s/newTag:.*/newTag: ${TAG}/" ${KUSTOMIZE_OVERLAY}
+
+      # 変更を Git に反映（無限ループ防止込み）
+      - name: Commit and push manifest change
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add ${KUSTOMIZE_OVERLAY}
+          git commit -m "chore: update image tag to ${TAG} [skip ci]" || echo "No changes to commit"
+          git push origin main

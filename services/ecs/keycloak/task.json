@@ -1,0 +1,106 @@
+{
+    "containerDefinitions": [
+        {
+            "name": "keycloak",
+            "image": "157094121738.dkr.ecr.us-east-1.amazonaws.com/keycloak@sha256:1437c0b410499ef533c6fe80e71013c22d3c9368da15bfdfd9bc06a72ab13da9",
+            "cpu": 0,
+            "portMappings": [
+                {
+                    "name": "keycloak-8080-tcp",
+                    "containerPort": 8080,
+                    "hostPort": 8080,
+                    "protocol": "tcp"
+                }
+            ],
+            "essential": true,
+            "command": [
+                "start",
+                "--optimized"
+            ],
+            "environment": [
+                {
+                    "name": "KC_PROXY_HEADERS",
+                    "value": "xforwarded"
+                },
+                {
+                    "name": "KC_DB_PASSWORD",
+                    "value": "password"
+                },
+                {
+                    "name": "KEYCLOAK_ADMIN_PASSWORD",
+                    "value": "password"
+                },
+                {
+                    "name": "KC_HTTP_MANAGEMENT_HEALTH_ENABLED",
+                    "value": "false"
+                },
+                {
+                    "name": "KC_DB_USERNAME",
+                    "value": "postgres"
+                },
+                {
+                    "name": "KC_PROXY",
+                    "value": "edge"
+                },
+                {
+                    "name": "KC_DB",
+                    "value": "postgres"
+                },
+                {
+                    "name": "KEYCLOAK_ADMIN",
+                    "value": "admin"
+                },
+                {
+                    "name": "KC_DB_URL_HOST",
+                    "value": "dms-3.c3jn0kosadjl.us-east-1.rds.amazonaws.com"
+                },
+                {
+                    "name": "KC_HTTP_ENABLED",
+                    "value": "true"
+                },
+                {
+                    "name": "KC_DB_URL_DATABASE",
+                    "value": "keycloak"
+                },
+                {
+                    "name": "KC_DB_URL_PORT",
+                    "value": "5432"
+                },
+                {
+                    "name": "KC_DB_SCHEMA",
+                    "value": "public"
+                },
+                {
+                    "name": "KC_HOSTNAME",
+                    "value": "cognito-4-1857216914.us-east-1.elb.amazonaws.com"
+                }
+            ],
+            "mountPoints": [],
+            "volumesFrom": [],
+            "logConfiguration": {
+                "logDriver": "awslogs",
+                "options": {
+                    "awslogs-group": "/ecs/keycloak-fargate",
+                    "awslogs-create-group": "true",
+                    "awslogs-region": "us-east-1",
+                    "awslogs-stream-prefix": "ecs"
+                },
+                "secretOptions": []
+            },
+            "systemControls": []
+        }
+    ],
+    "family": "keycloak-fargate",
+    "taskRoleArn": "arn:aws:iam::157094121738:role/ecsTaskExecutionRole",
+    "executionRoleArn": "arn:aws:iam::157094121738:role/ecsTaskExecutionRole",
+    "networkMode": "awsvpc",
+    "volumes": [],
+    "placementConstraints": [],
+    "requiresCompatibilities": [
+        "FARGATE"
+    ],
+    "cpu": "1024",
+    "memory": "2048",
+
+    "tags": []
+}

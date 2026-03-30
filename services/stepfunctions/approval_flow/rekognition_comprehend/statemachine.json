@@ -1,0 +1,175 @@
+{
+    "Comment": "The property approval workflow ensures that its images and content is safe to publish and that there is an approved contract in place before the listing is made available to the public through the Unicorn Properties website.",
+    "StartAt": "VerifyContractExists",
+    "States": {
+      "VerifyContractExists": {
+        "Type": "Task",
+        "Resource": "arn:aws:states:::lambda:invoke",
+        "InputPath": "$.Detail",
+        "ResultPath": "$.contract_exists_check",
+        "Parameters": {
+          "Payload": {
+            "Input.$": "$"
+          },
+          "FunctionName": "arn:aws:lambda:ap-northeast-1:157094121738:function:uni-prop-local-properties-ContractExistsCheckerFun-IeN3d22psYbA"
+        },
+        "Next": "CheckImageIntegrity",
+        "Catch": [
+          {
+            "ErrorEquals": [
+              "ContractStatusNotFoundException"
+            ],
+            "Next": "NotFound"
+          }
+        ],
+        "Comment": "ContractExistsChecker checks to see if a contract for a specified property exists."
+      },
+      "NotFound": {
+        "Type": "Fail"
+      },
+      "CheckImageIntegrity": {
+        "Type": "Map",
+        "Iterator": {
+          "StartAt": "CheckForUnsafeContentInImages",
+          "States": {
+            "CheckForUnsafeContentInImages": {
+              "Type": "Task",
+              "End": true,
+              "Parameters": {
+                "Image": {
+                  "S3Object": {
+                    "Bucket": "uni-prop-local-images-157094121738",
+                    "Name.$": "$.ImageName"
+                  }
+                }
+              },
+              "Resource": "arn:aws:states:::aws-sdk:rekognition:detectModerationLabels"
+            }
+          }
+        },
+        "Next": "CheckDescriptionSentiment",
+        "Comment": "Loop through all the images for the property and ensure they don't have unsafe content.",
+        "ItemsPath": "$.Detail.images",
+        "ItemSelector": {
+          "ImageName.$": "$$.Map.Item.Value"
+        },
+        "ResultPath": "$.imageModerations"
+      },
+      "CheckDescriptionSentiment": {
+        "Type": "Task",
+        "Parameters": {
+          "LanguageCode": "en",
+          "Text.$": "$.Detail.description"
+        },
+        "Resource": "arn:aws:states:::aws-sdk:comprehend:detectSentiment",
+        "Next": "ValidateContentIntegrity",
+        "ResultPath": "$.contentSentiment"
+      },
+      "ValidateContentIntegrity": {
+        "Type": "Task",
+        "Resource": "arn:aws:states:::lambda:invoke",
+        "ResultPath": "$.validation_check",
+        "ResultSelector": {
+          "validation_result.$": "$.Payload.validation_result"
+        },
+        "Parameters": {
+          "Payload.$": "$",
+          "FunctionName": "arn:aws:lambda:ap-northeast-1:157094121738:function:uni-prop-local-properties-ContentIntegrityValidato-gC4OPYViFyU7"
+        },
+        "Retry": [
+          {
+            "ErrorEquals": [
+              "Lambda.ServiceException",
+              "Lambda.AWSLambdaException",
+              "Lambda.SdkClientException"
+            ],
+            "IntervalSeconds": 2,
+            "MaxAttempts": 6,
+            "BackoffRate": 2
+          }
+        ],
+        "Next": "IsContentSafe"
+      },
+      "IsContentSafe": {
+        "Type": "Choice",
+        "Choices": [
+          {
+            "Variable": "$.validation_check.validation_result",
+            "StringEquals": "PASS",
+            "Next": "WaitForContractApproval"
+          }
+        ],
+        "Default": "PublicationEvaluationCompletedDeclined"
+      },
+      "PublicationEvaluationCompletedDeclined": {
+        "Type": "Task",
+        "Resource": "arn:aws:states:::events:putEvents",
+        "Parameters": {
+          "Entries": [
+            {
+              "Detail": {
+                "property_id.$": "$.Detail.property_id",
+                "evaluation_result": "DECLINED"
+              },
+              "DetailType": "PublicationEvaluationCompleted",
+              "EventBusName": "UnicornPropertiesBus-local",
+              "Source": "unicorn.properties"
+            }
+          ]
+        },
+        "Next": "Declined"
+      },
+      "Declined": {
+        "Type": "Succeed"
+      },
+      "WaitForContractApproval": {
+        "Type": "Task",
+        "Resource": "arn:aws:states:::lambda:invoke.waitForTaskToken",
+        "InputPath": "$.Detail",
+        "ResultPath": "$.status_check",
+        "Parameters": {
+          "Payload": {
+            "Input.$": "$",
+            "TaskToken.$": "$$.Task.Token"
+          },
+          "FunctionName": "arn:aws:lambda:ap-northeast-1:157094121738:function:uni-prop-local-properties-WaitForContractApprovalF-dBHzGj36oJiH"
+        },
+        "Retry": [
+          {
+            "ErrorEquals": [
+              "Lambda.ServiceException",
+              "Lambda.AWSLambdaException",
+              "Lambda.SdkClientException"
+            ],
+            "IntervalSeconds": 2,
+            "MaxAttempts": 6,
+            "BackoffRate": 2
+          }
+        ],
+        "Next": "PublicationEvaluationCompletedApproved",
+        "Comment": "ContractStatusChecker"
+      },
+      "PublicationEvaluationCompletedApproved": {
+        "Type": "Task",
+        "Resource": "arn:aws:states:::events:putEvents",
+        "Parameters": {
+          "Entries": [
+            {
+              "Detail": {
+                "property_id.$": "$.Detail.property_id",
+                "evaluation_result": "APPROVED"
+              },
+              "DetailType": "PublicationEvaluationCompleted",
+              "EventBusName": "UnicornPropertiesBus-local",
+              "Source": "unicorn.properties"
+            }
+          ]
+        },
+        "Next": "Approved"
+      },
+      "Approved": {
+        "Type": "Succeed"
+      }
+    }
+  }
+  

@@ -1,0 +1,20 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: fleet-hub
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://git-codecommit.us-east-1.amazonaws.com/v1/repos/oyaizu-eks
+    targetRevision: master
+    path: hub
+  destination:
+    name: in-cluster
+    namespace: fleet-system
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

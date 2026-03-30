@@ -1,0 +1,4 @@
+## CodeCommitをソース
+機能ロールにCodeCommitの権限をアタッチする
+
+アクセスエントリで機能ロールに「AmazonEKSClusterAdminPolicy」を追加する

@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: frontend-namespace
+  name: frontend-deployment
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: frontend-app
+  replicas: 2
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: frontend-app
+    spec:
+      # serviceAccountName: frontend-serviceaccount #コンテナがAWSサービスにアクセスする際に必要
+      containers:
+      - image: 140083316867.dkr.ecr.us-east-1.amazonaws.com/frontend:latest  #コンテナイメージを指定する
+        env:
+        - name: API_URL
+          value: http://backend-service.backend-namespace.svc.clusterset.local/test
+        resources:
+          limits:
+            memory: "700Mi"  #Fargateはメモリ予約に 256 MB追加される
+            cpu: "0.5"
+          requests:
+            memory: "700Mi"
+            cpu: "0.5"
+        imagePullPolicy: Always
+        name: frontend-app
+        ports:
+        - containerPort: 8080

@@ -1,0 +1,37 @@
+## task1
+Lambda関数(SalesFunction)で新しいバージョンを発行し、エイリアスとして登録する。
+```
+import boto3
+import json
+import decimal
+
+from boto3.dynamodb.conditions import Key
+
+class DecimalEncoder(json.JSONEncoder):
+    def default(self, o):
+        if isinstance(o, decimal.Decimal):
+            if o % 1 > 0:
+                return float(o)
+            else:
+                return int(o)
+        return super(DecimalEncoder, self).default(o)
+
+def lambda_handler(event, context):
+
+    dynamodb = boto3.resource('dynamodb')
+
+    table = dynamodb.Table('Sales')
+
+    response = table.scan(
+        FilterExpression=Key('orderYear').eq(2017)
+    )
+
+    sortedList = sorted(response["Items"], key = lambda i: i['total'], reverse=True)
+
+    body = json.dumps(sortedList[:3], cls=DecimalEncoder)
+
+    return {
+        'statusCode': 400,
+        'body': body
+    }
+```

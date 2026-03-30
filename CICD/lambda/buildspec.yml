@@ -1,0 +1,26 @@
+version: 0.2
+
+env:
+  variables:
+    LAMBDA_FUNCTION_NAME: "lab2-deploy-lambda"  # Lambda関数名を変数として定義
+
+phases:
+  install:
+    commands:
+      - aws --version
+
+  build:
+    commands:
+      - echo Build started on `date`
+      - zip -r lambda.zip lambda_function.py
+      - aws lambda update-function-code --function-name $LAMBDA_FUNCTION_NAME --zip-file fileb://lambda.zip
+      - sleep 10 # wait for update-function-code complete
+      - aws lambda publish-version --function-name $LAMBDA_FUNCTION_NAME --description "update version"
+      # 今回は扱わないが、prodを最新バージョンに切り替える場合は以下のようにすればOK
+      # - NEW_VERSION=$(aws lambda publish-version --function-name $LAMBDA_FUNCTION_NAME --description "update version" --query 'Version' --output text)
+      # - aws lambda update-alias --function-name $LAMBDA_FUNCTION_NAME --name prod --function-version $NEW_VERSION
+
+artifacts:
+  files:
+    - lambda.zip
+    - appspec.yml

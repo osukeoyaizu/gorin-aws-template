@@ -1,0 +1,5 @@
+# Put spoke initialization manifests here
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: example

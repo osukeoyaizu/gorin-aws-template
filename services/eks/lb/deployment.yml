@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: sample-namespace
+  name: sample-deployment
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: sample-app
+  replicas: 2
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: sample-app
+    spec:
+      # serviceAccountName: sample-serviceaccount #コンテナがAWSサービスにアクセスする際に必要
+      containers:
+      - image: nginx  #コンテナイメージを指定する
+        # env:
+        # - name: SAMPLE
+        #   value: sample
+        resources:
+          limits:
+            memory: "700Mi"  #Fargateはメモリ予約に 256 MB追加される
+            cpu: "0.5"
+          requests:
+            memory: "700Mi"
+            cpu: "0.5"
+        imagePullPolicy: Always
+        name: sample-app
+        ports:
+        - containerPort: 80

@@ -1,0 +1,77 @@
+version: 0.2
+
+env:
+  variables:
+    MANIFESTS_BRANCH: "master"
+    MANIFESTS_PATH: "app-manifests/deployment.yaml"
+    # MANIFESTS_REPO_URL は CodeBuild の環境変数で設定してください
+    # 例: https://git-codecommit.us-east-1.amazonaws.com/v1/repos/manifests-repo
+
+phases:
+  pre_build:
+    commands:
+      - echo Logging in to Amazon ECR...
+      - aws --version
+      - aws ecr get-login-password --region "$AWS_DEFAULT_REGION" | docker login --username AWS --password-stdin "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com"
+      - REPOSITORY_URI="$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE_REPO_NAME"
+      - COMMIT_HASH=$(echo "$CODEBUILD_RESOLVED_SOURCE_VERSION" | cut -c 1-7)
+      - IMAGE_TAG="$COMMIT_HASH"
+      - echo "REPOSITORY_URI=$REPOSITORY_URI"
+      - echo "IMAGE_TAG=$IMAGE_TAG"
+
+  build:
+    commands:
+      - echo Build started on $(date)
+      - echo Building the Docker image...
+      - docker build -t "$REPOSITORY_URI:$IMAGE_TAG" .
+      - echo Pushing the Docker image...
+      - docker push "$REPOSITORY_URI:$IMAGE_TAG"
+
+  post_build:
+    commands:
+      - echo Build completed on $(date)
+
+      # 1) digest を取得（ECR immutable 前提）
+      - |-
+        set -euo pipefail
+        DIGEST=$(aws ecr describe-images \
+          --region "$AWS_DEFAULT_REGION" \
+          --repository-name "$IMAGE_REPO_NAME" \
+          --image-ids imageTag="$IMAGE_TAG" \
+          --query 'imageDetails[0].imageDigest' \
+          --output text)
+        echo "DIGEST=$DIGEST"
+        echo "DIGEST=$DIGEST" > /tmp/digest.env
+
+      # 2) manifests repo を clone -> 置換 -> commit -> push
+      - |-
+        set -euo pipefail
+        source /tmp/digest.env
+
+        echo "Cloning manifests repo..."
+        git config --global credential.helper '!aws codecommit credential-helper $@'
+        git config --global credential.UseHttpPath true
+
+        rm -rf manifests-repo
+        git clone "$MANIFESTS_REPO_URL" manifests-repo
+        cd manifests-repo
+        git checkout "$MANIFESTS_BRANCH"
+
+        echo "Updating manifest image to digest..."
+        # image: <repo>:tag でも image: <repo>@sha256:... でも置換できるようにする
+        sed -i -E "s#image:[[:space:]]*${REPOSITORY_URI}(:[A-Za-z0-9._-]+)?(@sha256:[a-f0-9]+)?#image: ${REPOSITORY_URI}@${DIGEST}#g" "$MANIFESTS_PATH"
+
+        echo "--- updated file ---"
+        cat "$MANIFESTS_PATH"
+
+        echo "Committing and pushing..."
+        git config user.name "codebuild"
+        git config user.email "codebuild@amazonaws.com"
+
+        git add "$MANIFESTS_PATH"
+        git commit -m "deploy: ${IMAGE_REPO_NAME}@${DIGEST} (tag ${IMAGE_TAG})" || echo "No changes to commit"
+        git push origin "$MANIFESTS_BRANCH"
+
+artifacts:
+  files:
+    - '**/*'

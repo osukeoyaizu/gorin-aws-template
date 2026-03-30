@@ -1,0 +1,11 @@
+{
+    "detail": {
+      "dynamodb": {
+        "NewImage": {
+          "name": {
+            "S": ["aaa"]
+          }
+        }
+      }
+    }
+  }

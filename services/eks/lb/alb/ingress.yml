@@ -1,0 +1,22 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  namespace: sample-namespace
+  name: sample-ingress
+  annotations:
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/security-groups: <セキュリティグループID>
+    alb.ingress.kubernetes.io/subnets: <パブリックサブネット1>, <パブリックサブネット2> #albのサブネットを指定(既存のvpcにクラスターを作成した場合,サブネットにタグ付けしていない場合に必要)
+spec:
+  ingressClassName: alb
+  rules:
+    - http:
+        paths:
+        - path: /
+          pathType: Prefix
+          backend:
+            service:
+              name: sample-service
+              port:
+                number: 80

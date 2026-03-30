@@ -1,0 +1,20 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: sample-app-from-codecommit
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://git-codecommit.us-east-1.amazonaws.com/v1/repos/oyaizu-commit
+    targetRevision: master
+    path: app-manifests
+  destination:
+    name: in-cluster
+    namespace: oyaizu-namespace
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

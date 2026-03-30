@@ -1,0 +1,19 @@
+version: 0.2
+
+phases:
+  pre_build:
+    commands:
+      # # s3がソースの場合に必要
+      # - rm -r -f ./node_modules 
+      - echo source version $CODEBUILD_RESOLVED_SOURCE_VERSION
+      - npm install
+  build:
+    commands:
+      - echo build start `date "+%Y%m%d-%H%M%S"`
+      - npm run build
+      - echo build end `date "+%Y%m%d-%H%M%S"`
+      # - aws s3 sync ./out s3://lab2-s3
+artifacts:
+  base-directory: 'build'
+  files:
+    - '**/*'

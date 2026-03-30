@@ -1,0 +1,45 @@
+
+{
+  "RecipeFormatVersion": "2020-01-25",
+  "ComponentName": "com.aws.TempThresholdAnomaly",
+  "ComponentVersion": "1.0.6",
+  "ComponentDescription": "Subscribe temp from AWS IoT Core topic, threshold check, publish anomalies to AWS IoT Core",
+  "ComponentPublisher": "Example",
+  "ComponentConfiguration": {
+    "DefaultConfiguration": {
+      "ThresholdTemp": 30.0,
+      "accessControl": {
+        "aws.greengrass.ipc.mqttproxy": {
+          "com.example.TempThresholdAnomaly:mqttproxy:1": {
+            "policyDescription": "Allow subscribe temp topic and publish anomaly topic",
+            "operations": [
+              "aws.greengrass#SubscribeToIoTCore",
+              "aws.greengrass#PublishToIoTCore"
+            ],
+            "resources": [
+              "sensors/temperature",
+              "alerts/temperature"
+            ]
+          }
+        }
+      }
+    }
+  },
+  "Manifests": [
+    {
+      "Platform": { "os": "linux" },
+      "Artifacts": [
+        {
+          "URI": "s3://oyaizu-workshop/artifacts/com.aws.TempThresholdAnomaly/1.0.6/threshold_anomaly.py"
+        }
+      ],
+      "Lifecycle": {
+        "Install": {
+          "RequiresPrivilege": true,
+          "Script": "python3 -m pip install --no-cache-dir --ignore-installed awsiotsdk awscrt"
+        },
+        "Run": "python3 -u {artifacts:path}/threshold_anomaly.py"
+      }
+    }
+  ]
+}

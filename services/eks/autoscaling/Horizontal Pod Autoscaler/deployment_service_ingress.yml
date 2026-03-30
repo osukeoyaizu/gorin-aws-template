@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: lab2-deployment
+spec:
+  selector:
+    matchLabels:
+      run: lab2-app
+  template:
+    metadata:
+      labels:
+        run: lab2-app
+    spec:
+      containers:
+      - name: lab2-nginx
+        image: nginx
+        ports:
+        - containerPort: 80
+        resources:
+          limits:
+            cpu: 500m
+          requests:
+            cpu: 200m
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: lab2-service
+  labels:
+    run: lab2-service
+spec:
+  ports:
+  - port: 80
+  selector:
+    run: lab2-app
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: lab2-ingress
+  annotations:
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/security-groups: sg-02cd5a611e8e40fda
+spec:
+  ingressClassName: alb
+  rules:
+    - http:
+        paths:
+        - path: /
+          pathType: Prefix
+          backend:
+            service:
+              name: lab2-service
+              port:
+                number: 80

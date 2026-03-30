@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+  </meta>
+  <title>Cognito Test</title>
+  <script src="https://sdk.amazonaws.com/js/aws-sdk-2.16.0.min.js"></script>
+  <script src="js/aws-cognito-sdk.js"></script>
+  <script src="js/amazon-cognito-identity.min.js"></script>
+  <script src="js/auth.js"></script>
+</head>
+
+<body>
+  <h1>ログイン画面</h1>
+  <span style="display: inline-block; width: 100px;">Email</span>
+  <input type="text" id="email" placeholder="メールアドレス">
+  <br />
+  <span style="display: inline-block; width: 100px;">Password</span>
+  <input type="password" id="password" placeholder="パスワード">
+  <br /><br />
+  <input type="button" value="ログイン" onclick="LoginUser();">
+  <br /><br />
+  <div id="message"></div>
+</body>
+
+</html>

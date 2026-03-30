@@ -1,0 +1,23 @@
+version: 0.2
+
+phases:
+  install:
+    runtime-versions:
+      python: 3.13
+    commands:
+      - pip3 install pytest
+
+  build:
+    commands:
+      - export PYTHONPATH=$PYTHONPATH:src
+      - mkdir -p reports
+      - pytest --junitxml=reports/pytest-report.xml
+reports:
+  pytest_reports:
+    files:
+      - reports/pytest-report.xml
+    file-format: JUNITXML
+artifacts:
+  base-directory: src
+  files:
+    - lambda_function.py

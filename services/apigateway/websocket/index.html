@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>「WebSocket」お試しチャット</title>
+</head>
+<body>
+    <H3>「WebSocket」お試しチャット</H3>
+    <div style="display:flex; justify-content:center; ">
+        <div style="display:flex; flex-direction:column; width:50%;">
+            <p>名前</p>
+            <input id="sender" type="text" />
+            <p>メッセージ</p>
+            <input id="input" type="text" />
+            <div style="margin-top:20px; ">
+                <button onclick="send()">送信</button>
+            </div>
+        </div>
+    </div>
+    <pre id="output"></pre>
+    <script>
+        var input = document.getElementById('input');
+        var sender = document.getElementById('sender');
+        var output = document.getElementById('output');
+        var socket = new WebSocket("wss://reh6woxdta.execute-api.ap-northeast-1.amazonaws.com/production"); // websocketのurl
+        socket.onopen = function () {
+            output.innerHTML += "接続できました！\n";
+        };
+        // websocketからメッセージが送信されてきた時の処理
+        socket.onmessage = function (e) {
+            var messageData = JSON.parse(e.data);
+            // senderとdataを表示
+            output.innerHTML += messageData.sender + ": " + messageData.message + "\n";
+        };
+        // 送信ボタンをクリックした時の処理
+        function send() {
+            socket.send(JSON.stringify(
+                {
+                    "action": "sendMessage", // ルート[sendMessage]へ送信する
+                    "message": input.value,
+                    "sender": sender.value
+                }
+            ));
+            input.value = "";
+        };
+    </script>
+</body>
+</html>

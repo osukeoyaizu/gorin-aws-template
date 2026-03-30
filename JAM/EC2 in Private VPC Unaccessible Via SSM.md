@@ -1,0 +1,5 @@
+## task1
+EC2インスタンスに紐づくロールにAmazonSSMManagedInstanceCoreポリシーの内容をコピーしてインラインポリシーを作成する
+
+## task2
+セッションマネージャー接続に必要なVPCエンドポイント(ssm,ssmmessages,ec2messages)を作成する
