@@ -1,0 +1,205 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: |
+  このテンプレートは、プライベートサブネット内のNginx EC2インスタンスを
+  自動スケーリングと暗号化されたEFSを使用して公開するためのALBを設定します。
+
+Parameters:
+  EnvironmentName:
+    Description: 環境名（リソース名のプレフィックス）
+    Type: String
+    Default: vpc01
+
+  Ec2ImageId:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: /aws/service/ami-amazon-linux-latest/al2023-ami-kernel-6.1-x86_64
+
+  InstanceType:
+    Description: EC2インスタンスタイプ
+    Type: String
+    Default: t3.micro
+
+Resources:
+  # キーペア
+  KeyPair:
+    Type: AWS::EC2::KeyPair
+    Properties:
+      KeyName: !Sub ${EnvironmentName}-key
+
+  # Application Load Balancer用のセキュリティグループ
+  ALBSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: ALBへのHTTPトラフィックを許可
+      VpcId: !ImportValue VpcId
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          SourcePrefixListId: pl-58a04531
+      Tags:
+        - Key: !ImportValue TagKey
+          Value: !ImportValue TagValue
+
+  # EC2インスタンス用のセキュリティグループ
+  InstanceSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: ALBからのHTTPトラフィックを許可
+      VpcId: !ImportValue VpcId
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          SourceSecurityGroupId: !Ref ALBSecurityGroup
+      Tags:
+        - Key: !ImportValue TagKey
+          Value: !ImportValue TagValue
+
+  # Application Load Balancer
+  ApplicationLoadBalancer:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Name: !Sub ${EnvironmentName}-ec2-alb
+      Subnets:
+        - !ImportValue PublicSubnet1Id
+        - !ImportValue PublicSubnet2Id
+      SecurityGroups:
+        - !Ref ALBSecurityGroup
+      Tags:
+        - Key: !ImportValue TagKey
+          Value: !ImportValue TagValue
+
+  # Nginxインスタンス用のターゲットグループ
+  TargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      Name: !Sub ${EnvironmentName}-nginx-tg
+      VpcId: !ImportValue VpcId
+      Protocol: HTTP
+      Port: 80
+      TargetType: instance
+      HealthCheckProtocol: HTTP
+      HealthCheckPort: 80
+      HealthCheckPath: /
+      HealthCheckIntervalSeconds: 30
+      HealthCheckTimeoutSeconds: 5
+      HealthyThresholdCount: 2
+      UnhealthyThresholdCount: 2
+      Tags:
+        - Key: !ImportValue TagKey
+          Value: !ImportValue TagValue
+
+  # Load Balancerのリスナー
+  ALBListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      LoadBalancerArn: !Ref ApplicationLoadBalancer
+      Port: 80
+      Protocol: HTTP
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref TargetGroup
+
+  # EC2インスタンス用のローンチテンプレート
+  MyLaunchTemplate:
+    Type: AWS::EC2::LaunchTemplate
+    Properties:
+      LaunchTemplateName: !Sub ${AWS::StackName}-web-server-template
+      LaunchTemplateData:
+        TagSpecifications:
+          - ResourceType: instance
+            Tags:
+              - Key: Name
+                Value: !Sub ${EnvironmentName}-nginx-instance
+              - Key: !ImportValue TagKey
+                Value: !ImportValue TagValue
+        UserData: !Base64
+          Fn::Sub:
+            - |
+              #!/bin/bash
+              yum install -y nginx
+              systemctl start nginx
+              systemctl enable nginx
+              mkdir -p /mnt/efs
+              echo "${FileSystemId}.efs.${AWS::Region}.amazonaws.com:/ /mnt/efs nfs defaults,_netdev 0 0" >> /etc/fstab
+              mount -a
+            - FileSystemId: !Ref MyEFS
+        KeyName: !Ref KeyPair
+        ImageId: !Ref Ec2ImageId
+        InstanceType: !Ref InstanceType
+        NetworkInterfaces:
+          - AssociatePublicIpAddress: 'false'
+            DeviceIndex: '0'
+            Groups:
+              - !Ref InstanceSecurityGroup
+
+  # Auto Scaling Group
+  AutoScalingGroup:
+    Type: AWS::AutoScaling::AutoScalingGroup
+    Properties:
+      LaunchTemplate:
+        LaunchTemplateId: !Ref MyLaunchTemplate
+        Version: !GetAtt MyLaunchTemplate.LatestVersionNumber
+      MinSize: 2
+      MaxSize: 4
+      DesiredCapacity: 2
+      VPCZoneIdentifier:
+        - !ImportValue PrivateSubnet1Id
+        - !ImportValue PrivateSubnet2Id
+      TargetGroupARNs:
+        - !Ref TargetGroup
+      HealthCheckType: ELB  # ELBによるヘルスチェック
+
+  # ターゲットトラッキングスケーリングポリシー
+  TargetTrackingScalingPolicy:
+    Type: AWS::AutoScaling::ScalingPolicy
+    Properties:
+      AutoScalingGroupName: !Ref AutoScalingGroup
+      PolicyType: TargetTrackingScaling
+      TargetTrackingConfiguration:
+        TargetValue: 50 # CPU利用率のターゲット値（50%）
+        PredefinedMetricSpecification:
+          PredefinedMetricType: ASGAverageCPUUtilization
+
+  # # EFS用のセキュリティグループ
+  # EFSSecurityGroup:
+  #   Type: AWS::EC2::SecurityGroup
+  #   Properties:
+  #     GroupDescription: EC2インスタンスからのNFSトラフィックを許可
+  #     VpcId: !ImportValue VpcId
+  #     SecurityGroupIngress:
+  #       - IpProtocol: tcp
+  #         FromPort: 2049
+  #         ToPort: 2049
+  #         SourceSecurityGroupId: !Ref InstanceSecurityGroup
+
+  # # EFSファイルシステム（KMS暗号化付き）
+  # MyEFS:
+  #   Type: AWS::EFS::FileSystem
+  #   Properties:
+  #     Encrypted: true
+  #     KmsKeyId: !ImportValue KMSKeyId
+  #     PerformanceMode: generalPurpose
+
+  # # プライベートサブネット1のEFSマウントターゲット
+  # MyEFSMountTarget1:
+  #   Type: AWS::EFS::MountTarget
+  #   Properties:
+  #     FileSystemId: !Ref MyEFS
+  #     SubnetId: !ImportValue PrivateSubnet1Id
+  #     SecurityGroups:
+  #       - !Ref EFSSecurityGroup
+
+  # # プライベートサブネット2のEFSマウントターゲット
+  # MyEFSMountTarget2:
+  #   Type: AWS::EFS::MountTarget
+  #   Properties:
+  #     FileSystemId: !Ref MyEFS
+  #     SubnetId: !ImportValue PrivateSubnet2Id
+  #     SecurityGroups:
+  #       - !Ref EFSSecurityGroup
+
+Outputs:
+  LoadBalancerDNS:
+    Description: Load BalancerのDNS名
+    Value: !GetAtt ApplicationLoadBalancer.DNSName

@@ -7,3 +7,11 @@ journalctl -u kubelet
 ```
 ### 修正手順
 - https://docs.aws.amazon.com/ja_jp/eks/latest/userguide/hybrid-nodes-troubleshooting.html
+
+
+## AccessDenied: Not authorized to perform sts.AssumeRoleWithWebIdentity
+- サービスアカウントに紐づくIAMロールの信頼ポリシーがおかしい
+
+## Cluster Autoscalerがうまく動かない
+https://repost.aws/ja/knowledge-center/amazon-eks-troubleshoot-autoscaler
+- AGにタグ付けが必要

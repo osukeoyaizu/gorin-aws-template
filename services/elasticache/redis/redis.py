@@ -2,7 +2,6 @@ import json
 import os
 import boto3
 import redis
-import requests
 
 REGION_NAME = os.environ['REGION_NAME']
 SECRETS_NAME = os.environ['SECRETS_NAME']
@@ -32,44 +31,108 @@ def encrypted_connection_redis():
     return cache
 
 
-# 辞書型で値を返す
-def get_dict_data(key):
-    response = requests.get(key)
-    print(response.json())
-    return response.json()
-
-
-# キャッシュデータ取得
+# キャッシュデータ取得（サンプルデータを返す）
 def check_cache(cache, key):
     response_data = cache.get(key)
     
     if response_data:
         print('Cache exists!')
-        return response_data
+        return json.loads(response_data)
     
     else:
         print('Cache not exists...')
-        response_data = get_dict_data(key)
+
+        # ★ サンプルデータ（本来は API などから取得する想定）
+        response_data = {
+            "message": "This is sample data",
+            "key": key,
+            "value": 12345
+        }
 
         # キャッシュを保存
         print('Cache setting')
-        data = json.dumps(response_data, default=str) # timestampが含まれる場合は json.dumps(data, default=str)
-        cache.set(key, data, ex=ttl)  # r.set(key, value_string ← json形式, ex=ttl)
-        return data
-    
+        data = json.dumps(response_data)
+        cache.set(key, data, ex=ttl)
+        return response_data
+
+
+# -----------------------------
+# 🔥 ランキング処理
+# -----------------------------
+
+def update_score(cache, game_id, player_id, score):
+    """スコアを登録（更新）"""
+    cache.zadd(f"leaderboard:{game_id}", {player_id: score})
+
+
+def get_rank(cache, game_id, player_id):
+    """プレイヤーの順位を取得（1位始まり）"""
+    rank = cache.zrevrank(f"leaderboard:{game_id}", player_id)
+    return rank + 1 if rank is not None else None
+
+
+def get_top_players(cache, game_id, top_n):
+    """上位ランキングを取得"""
+    results = cache.zrevrangebyscore(
+        f"leaderboard:{game_id}",
+        "+inf",
+        "-inf",
+        withscores=True,
+        start=0,
+        num=top_n
+    )
+    return [(player.decode(), score) for player, score in results]
+
+
+# -----------------------------
+# Lambda メイン処理
+# -----------------------------
 
 def lambda_handler(event, context):
-    id = event['id']
 
-    # redis接続情報(転送中の暗号化有効)
+    # redis接続
     cache = encrypted_connection_redis()
 
-    # キャッシュデータ取得
-    key = f"https://tz75yjw0y8.execute-api.ap-northeast-1.amazonaws.com/dev/?id={id}"
+    # -----------------------------
+    # ① キャッシュ処理
+    # -----------------------------
+    key = "sample_key"
+    cache_data = check_cache(cache, key)
 
-    json_data = check_cache(cache, key)
+    # -----------------------------
+    # ② ランキング処理（サンプル event）
+    # -----------------------------
+    game_id = event.get("gameId", "sample_game")
+    player_id = event.get("playerId", "player_001")
+    score = event.get("score", 1000)
+    top_n = event.get("top", 5)
 
+    # スコア更新
+    update_score(cache, game_id, player_id, score)
+
+    # 自分の順位
+    rank = get_rank(cache, game_id, player_id)
+
+    print(rank)
+
+    # 上位ランキング
+    top_players = get_top_players(cache, game_id, top_n)
+
+    rank = 1
+    results = []
+    for item in top_players:
+        result = {}
+        result['rank'] = rank
+        result['playerId'] = item[0]
+        result['score'] = item[1]
+        results.append(result)
+        rank += 1
+    print(results)
+
+    # -----------------------------
+    # レスポンス
+    # -----------------------------
     return {
         'statusCode': 200,
-        'body':json_data
+        'body': json.dumps(results, default=str)
     }

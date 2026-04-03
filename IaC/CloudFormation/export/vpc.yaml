@@ -1,0 +1,371 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: |
+  このテンプレートは、VPCをデプロイし、2つのアベイラビリティゾーンにまたがる
+  公共およびプライベートサブネットのペアを作成し、VPCフローログを有効にします。
+
+Parameters:
+  EnvironmentName:
+    Description: 環境名（リソース名のプレフィックス）
+    Type: String
+    Default: vpc01
+  
+  VpcCIDR:
+    Description: VPCのIPレンジ（CIDR表記）
+    Type: String
+    Default: 10.0.0.0/16
+  
+  PublicSubnet1CIDR:
+    Description: 最初のアベイビリティゾーンのパブリックサブネットのIPレンジ
+    Type: String
+    Default: 10.0.1.0/24
+  
+  PublicSubnet2CIDR:
+    Description: 2番目のアベイビリティゾーンのパブリックサブネットのIPレンジ
+    Type: String
+    Default: 10.0.2.0/24
+  
+  PrivateSubnet1CIDR:
+    Description: 最初のアベイビリティゾーンのプライベートサブネットのIPレンジ
+    Type: String
+    Default: 10.0.101.0/24
+  
+  PrivateSubnet2CIDR:
+    Description: 2番目のアベイビリティゾーンのプライベートサブネットのIPレンジ
+    Type: String
+    Default: 10.0.102.0/24
+  
+  PrivateSubnet3CIDR:
+    Description: 最初のアベイビリティゾーンの2番目のプライベートサブネットのIPレンジ
+    Type: String
+    Default: 10.0.201.0/24
+  
+  PrivateSubnet4CIDR:
+    Description: 2番目のアベイビリティゾーンの2番目のプライベートサブネットのIPレンジ
+    Type: String
+    Default: 10.0.202.0/24
+  
+  TagKey:
+    Description: リソースタグのキー名
+    Type: String
+    Default: Owner
+  
+  TagValue:
+    Description: リソースタグの値
+    Type: String
+    Default: your-name-or-email
+
+Resources:
+  VPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: !Ref VpcCIDR
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName}
+        - Key: !Ref TagKey
+          Value: !Ref TagValue
+
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Ref EnvironmentName
+        - Key: !Ref TagKey
+          Value: !Ref TagValue
+
+  InternetGatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      InternetGatewayId: !Ref InternetGateway
+      VpcId: !Ref VPC
+
+  # パブリックサブネット1
+  PublicSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      AvailabilityZone: !Select
+        - 0
+        - !GetAZs ''
+      CidrBlock: !Ref PublicSubnet1CIDR
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName}-sub-pub01-az1
+        - Key: !Ref TagKey
+          Value: !Ref TagValue
+
+  # パブリックサブネット2
+  PublicSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      AvailabilityZone: !Select
+        - 1
+        - !GetAZs ''
+      CidrBlock: !Ref PublicSubnet2CIDR
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName}-sub-pub01-az2
+        - Key: !Ref TagKey
+          Value: !Ref TagValue
+
+  # プライベートサブネット1
+  PrivateSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      AvailabilityZone: !Select
+        - 0
+        - !GetAZs ''
+      CidrBlock: !Ref PrivateSubnet1CIDR
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName}-sub-prv01-az1
+        - Key: !Ref TagKey
+          Value: !Ref TagValue
+
+  # プライベートサブネット2
+  PrivateSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      AvailabilityZone: !Select
+        - 1
+        - !GetAZs ''
+      CidrBlock: !Ref PrivateSubnet2CIDR
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName}-sub-prv01-az2
+        - Key: !Ref TagKey
+          Value: !Ref TagValue
+
+  # プライベートサブネット3
+  PrivateSubnet3:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      AvailabilityZone: !Select
+        - 0
+        - !GetAZs ''
+      CidrBlock: !Ref PrivateSubnet3CIDR
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName}-sub-prv02-az1
+        - Key: !Ref TagKey
+          Value: !Ref TagValue
+
+  # プライベートサブネット4
+  PrivateSubnet4:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      AvailabilityZone: !Select
+        - 1
+        - !GetAZs ''
+      CidrBlock: !Ref PrivateSubnet4CIDR
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName}-sub-prv02-az2
+        - Key: !Ref TagKey
+          Value: !Ref TagValue
+
+  # NAT Gateway用のEIP
+  NatGateway1EIP:
+    Type: AWS::EC2::EIP
+    DependsOn: InternetGatewayAttachment
+    Properties:
+      Domain: vpc
+      Tags:
+        - Key: !Ref TagKey
+          Value: !Ref TagValue
+
+  NatGateway2EIP:
+    Type: AWS::EC2::EIP
+    DependsOn: InternetGatewayAttachment
+    Properties:
+      Domain: vpc
+      Tags:
+        - Key: !Ref TagKey
+          Value: !Ref TagValue
+
+  # NAT Gateway 1
+  NatGateway1:
+    Type: AWS::EC2::NatGateway
+    Properties:
+      AllocationId: !GetAtt NatGateway1EIP.AllocationId
+      SubnetId: !Ref PublicSubnet1
+      Tags:
+        - Key: !Ref TagKey
+          Value: !Ref TagValue
+
+  # NAT Gateway 2
+  NatGateway2:
+    Type: AWS::EC2::NatGateway
+    Properties:
+      AllocationId: !GetAtt NatGateway2EIP.AllocationId
+      SubnetId: !Ref PublicSubnet2
+      Tags:
+        - Key: !Ref TagKey
+          Value: !Ref TagValue
+
+  # パブリックルートテーブル
+  PublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName}-rtb-pub01
+        - Key: !Ref TagKey
+          Value: !Ref TagValue
+
+  # デフォルトのパブリックルート
+  DefaultPublicRoute:
+    Type: AWS::EC2::Route
+    DependsOn: InternetGatewayAttachment
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+
+  # パブリックサブネット1のルートテーブル関連付け
+  PublicSubnet1RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      SubnetId: !Ref PublicSubnet1
+
+  # パブリックサブネット2のルートテーブル関連付け
+  PublicSubnet2RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      SubnetId: !Ref PublicSubnet2
+
+  # プライベートルートテーブル1
+  PrivateRouteTable1:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName}-rtb-prv01-az1
+        - Key: !Ref TagKey
+          Value: !Ref TagValue
+
+  # デフォルトのプライベートルート1
+  DefaultPrivateRoute1:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref PrivateRouteTable1
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref NatGateway1
+
+  # プライベートサブネット1のルートテーブル関連付け
+  PrivateSubnet1RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PrivateRouteTable1
+      SubnetId: !Ref PrivateSubnet1
+
+  # プライベートルートテーブル2
+  PrivateRouteTable2:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName}-rtb-prv01-az2
+        - Key: !Ref TagKey
+          Value: !Ref TagValue
+
+  # デフォルトのプライベートルート2
+  DefaultPrivateRoute2:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref PrivateRouteTable2
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref NatGateway2
+
+  # プライベートサブネット2のルートテーブル関連付け
+  PrivateSubnet2RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PrivateRouteTable2
+      SubnetId: !Ref PrivateSubnet2
+
+Outputs:
+  VpcId:
+    Description: VPCのID
+    Value: !Ref VPC
+    Export:
+      Name: VpcId
+
+  PublicSubnet1Id:
+    Description: 最初のパブリックサブネットのID
+    Value: !Ref PublicSubnet1
+    Export:
+      Name: PublicSubnet1Id
+
+  PublicSubnet2Id:
+    Description: 2番目のパブリックサブネットのID
+    Value: !Ref PublicSubnet2
+    Export:
+      Name: PublicSubnet2Id
+
+  PrivateSubnet1Id:
+    Description: 最初のプライベートサブネットのID
+    Value: !Ref PrivateSubnet1
+    Export:
+      Name: PrivateSubnet1Id
+
+  PrivateSubnet2Id:
+    Description: 2番目のプライベートサブネットのID
+    Value: !Ref PrivateSubnet2
+    Export:
+      Name: PrivateSubnet2Id
+
+  PrivateSubnet3Id:
+    Description: 最初のアベイビリティゾーンの2番目のプライベートサブネットのID
+    Value: !Ref PrivateSubnet3
+    Export:
+      Name: PrivateSubnet3Id
+
+  PrivateSubnet4Id:
+    Description: 2番目のアベイビリティゾーンの2番目のプライベートサブネットのID
+    Value: !Ref PrivateSubnet4
+    Export:
+      Name: PrivateSubnet4Id
+
+  NatGateway1Id:
+    Description: 最初のNATゲートウェイのID
+    Value: !Ref NatGateway1
+    Export:
+      Name: NatGateway1Id
+
+  NatGateway2Id:
+    Description: 2番目のNATゲートウェイのID
+    Value: !Ref NatGateway2
+    Export:
+      Name: NatGateway2Id
+
+  TagKeyOutput:
+    Description: リソースタグのキー名
+    Value: !Ref TagKey
+    Export:
+      Name: TagKey
+
+  TagValueOutput:
+    Description: リソースタグの値
+    Value: !Ref TagValue
+    Export:
+      Name: TagValue

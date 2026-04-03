@@ -7,8 +7,8 @@
 - タグ
 
 ### KMS
-- キーローテーション
 - キーポリシー
+- キーローテーション
 - タグ
 
 ### AWS Backup
@@ -39,19 +39,20 @@
 - WAF
 - オーソライザ
 - リソースポリシー
+- CloudFront
 - タグ
 
 ### Lambda
 - パワーツール
 - CloudWatch Application Signals and AWS X-Ray
 - メモリサイズ
-- バージョニング
-- エイリアス
 - 環境変数
 - 暗号化(.zip, 環境変数)
 - 例外処理(SQS)
 - パワーチューニング(時間があれば)
 - リソースポリシー
+- バージョニング
+- エイリアス
 - タグ
 
 ### CloudFront
@@ -105,10 +106,10 @@
 
 
 ### ECR
-- ライフサイクルルール
 - イミュータブル
-- リソースポリシー
 - 暗号化
+- ライフサイクルルール
+- リソースポリシー
 - 拡張スキャン
 - タグ
 
@@ -151,15 +152,15 @@
   - EKS
     - CPU Utilization
     - Memory Utilization
-  - ALB
+  - CloudFront(ALB)
     - RequestCount
     - HTTPCode_Target_4XX_Count
     - HTTPCode_Target_5XX_Count
 - アラーム
 
 ### SQS
-- デッドレターキュー
 - 暗号化
+- デッドレターキュー
 - タグ
 
 ### SNS

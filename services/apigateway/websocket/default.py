@@ -19,6 +19,7 @@ def lambda_handler(event, context):
             endpoint_url=F"https://{domain_name}/{stage}"
         )
     # 全てのconnection_idに対してデータを送信する
+    # IAMポリシー(execute-api:ManageConnections)が必要
     for item in items:
         response = apigw_management.post_to_connection(
             ConnectionId=item['connection_id'],

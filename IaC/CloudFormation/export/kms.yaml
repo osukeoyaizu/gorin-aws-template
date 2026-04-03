@@ -1,0 +1,49 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: |
+  このテンプレートは、顧客管理のKMSキーを作成します。
+
+Parameters:
+  EnvironmentName:
+    Description: リソース名のプレフィックスとなる環境名
+    Type: String
+    Default: vpc01
+
+Resources:
+  # KMSキー
+  MyKMSKey:
+    Type: AWS::KMS::Key
+    Properties:
+      KeyPolicy:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS: !Sub arn:aws:iam::${AWS::AccountId}:root  # アカウントのルートユーザー
+            Action: kms:*  # KMSに関する全てのアクションを許可
+            Resource: '*'  # 全てのリソースに対して許可
+      Description: !Sub ${EnvironmentName} 環境用のKMSキー
+      KeyUsage: ENCRYPT_DECRYPT  # 暗号化と復号化に使用
+      KeySpec: SYMMETRIC_DEFAULT  # 対称キーを使用
+      Tags:
+        - Key: !ImportValue TagKey  # タグのキーをインポート
+          Value: !ImportValue TagValue  # タグの値をインポート
+
+  # KMSキーのエイリアス
+  MyKMSKeyAlias:
+    Type: AWS::KMS::Alias
+    Properties:
+      AliasName: !Sub alias/${EnvironmentName}-key  # 環境名に基づくエイリアス名
+      TargetKeyId: !Ref MyKMSKey  # 作成したKMSキーをターゲットに設定
+
+Outputs:
+  KMSKeyId:
+    Description: KMSキーのID
+    Value: !Ref MyKMSKey  # KMSキーのIDを出力
+    Export:
+      Name: KMSKeyId  # 他のスタックでインポート可能なエクスポート名
+
+  KMSKeyAlias:
+    Description: KMSキーのエイリアス
+    Value: !Ref MyKMSKeyAlias  # KMSキーのエイリアスを出力
+    Export:
+      Name: KMSKeyAlias  # 他のスタックでインポート可能なエクスポート名
