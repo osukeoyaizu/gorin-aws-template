@@ -6,7 +6,7 @@ CloudWatchAgentServerPolicy
 
 ### インストール
 ```
-sudo yum install amazon-cloudwatch-agent
+sudo yum install -y amazon-cloudwatch-agent
 ```
 
 ### collectdインストール
@@ -14,10 +14,56 @@ sudo yum install amazon-cloudwatch-agent
 sudo yum install -y collectd
 ```
 
+### wizard起動
+```
+sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-config-wizard
+```
+
 ### 実行
 ```
 cd /opt/aws/amazon-cloudwatch-agent/bin/
 sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -s -c file:config.json
+```
+
+
+### プロセス監視(nginx)
+- config.jsonのメトリクスにprocstatを追加
+```
+                "metrics_collected": {
+                        "collectd": {
+                                "metrics_aggregation_interval": 60
+                        },
+                        "disk": {
+                                "measurement": [
+                                        "used_percent"
+                                ],
+                                "metrics_collection_interval": 60,
+                                "resources": [
+                                        "*"
+                                ]
+                        },
+                        "mem": {
+                                "measurement": [
+                                        "mem_used_percent"
+                                ],
+                                "metrics_collection_interval": 60
+                        },
+                        "statsd": {
+                                "metrics_aggregation_interval": 60,
+                                "metrics_collection_interval": 10,
+                                "service_address": ":8125"
+                        },
+                        "procstat": [
+                                {
+                                        "pattern": "/usr/sbin/nginx",
+                                        "pid_finder": "pgrep",
+                                        "measurement": [
+                                                "pid_count"
+                                        ],
+                                        "metrics_collection_interval": 60
+                                }
+                        ]
+                }
 ```
 
 

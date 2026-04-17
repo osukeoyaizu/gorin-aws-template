@@ -42,18 +42,7 @@ aws cognito-idp set-user-mfa-preference \
   --software-token-mfa-settings Enabled=true,PreferredMfa=true
 ```
 
-## 外部IdP連携
-### keycloak
-「Cognito」→「ユーザープール」→「ソーシャルプロバイダーと外部プロバイダー」→「アイデンティティプロバイダーを追加」
 
-- OIDC
-  - プロバイダー名:任意
-  - クライアントID:Keycloakで作成したクライアントID
-  - クライアントシークレット:KeycloakクライアントのSecret
-  - 発行者URL:https://{Keycloakにアクセスするドメイン}/realms/{realms名}
-  - 属性マッピング
-    - ユーザープール属性:email
-    - OpenID Connect属性:email
 
 ## ユーザープール移行
 - 旧アプリケーションクライアントで[ALLOW_ADMIN_USER_PASSWORD_AUTH]にチェックをつける

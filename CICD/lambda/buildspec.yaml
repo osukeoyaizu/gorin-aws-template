@@ -1,0 +1,43 @@
+version: 0.2
+
+env:
+  variables:
+    LAMBDA_FUNCTION_NAME: "test"
+
+phases:
+  install:
+    commands:
+      - aws --version
+
+  build:
+    commands:
+      - echo "=== Packaging Lambda function (lambda/ folder) ==="
+      - cd lambda
+      - zip -r ../function.zip .
+      - cd ..
+
+      - |
+        echo "=== Getting current prod version ==="
+        CURRENT=$(aws lambda get-alias --function-name "${LAMBDA_FUNCTION_NAME}" --name prod --query 'FunctionVersion' --output text)
+        echo "CurrentVersion: ${CURRENT}"
+
+        echo "=== Updating Lambda code ==="
+        aws lambda update-function-code --function-name "${LAMBDA_FUNCTION_NAME}" --zip-file fileb://function.zip
+
+        echo "=== Waiting for Lambda update to complete ==="
+        aws lambda wait function-updated --function-name "${LAMBDA_FUNCTION_NAME}"
+
+        echo "=== Publishing new Lambda version ==="
+        TARGET=$(aws lambda publish-version --function-name "${LAMBDA_FUNCTION_NAME}" --query Version --output text)
+        echo "TargetVersion: ${TARGET}"
+
+        echo "=== Updating appspec.yml ==="
+        sed -i 's/Name:.*/Name: '"${LAMBDA_FUNCTION_NAME}"'/' appspec.yml
+        sed -i 's/CurrentVersion:.*/CurrentVersion: "'"${CURRENT}"'"/' appspec.yml
+        sed -i 's/TargetVersion:.*/TargetVersion: "'"${TARGET}"'"/' appspec.yml
+
+artifacts:
+  files:
+    - appspec.yml
+    - scripts/*
+

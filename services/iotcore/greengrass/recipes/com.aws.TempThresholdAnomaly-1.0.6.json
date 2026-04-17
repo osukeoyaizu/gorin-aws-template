@@ -36,7 +36,7 @@
       "Lifecycle": {
         "Install": {
           "RequiresPrivilege": true,
-          "Script": "python3 -m pip install --no-cache-dir --ignore-installed awsiotsdk awscrt"
+          "Script": "yum install -y python3-pip && python3 -m pip install --no-cache-dir --ignore-installed awsiotsdk awscrt"
         },
         "Run": "python3 -u {artifacts:path}/threshold_anomaly.py"
       }

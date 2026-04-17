@@ -177,3 +177,9 @@ COPY ./nginx.conf /etc/nginx/nginx.conf
 
 CMD ["/usr/sbin/nginx", "-g", "daemon off;"]
 ```
+
+## タスク定義
+特定のインスタンスタイプでのみ配置したい場合
+- タスク配置
+    - タイプ:memberOf
+    - 式:attribute.ecs.instance-type == <インスタンスタイプ>

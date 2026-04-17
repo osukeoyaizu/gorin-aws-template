@@ -2,18 +2,45 @@
 API パラメータ
 ```
 {
-  "ApplicationId": "<EMR Studio ApplicationのID>",
+  "ApplicationId": "{EMR Studio ApplicationのID}",
   "ExecutionRoleArn": "arn:aws:iam::<アカウントID>:role/service-role/AmazonEMR-ExecutionRole-xxxxx",
   "JobDriver": {
     "SparkSubmit": {
-      "EntryPoint": "<pythonファイルなどのS3パス>",
+      "EntryPoint": "{pythonファイルなどのS3パス}",
       "EntryPointArguments": [
         "--data_source",
-        "<データソースのS3パス>",
+        "{データソースのS3パス}",
         "--output_uri",
-        "データ出力S3パス"
+        "{データ出力S3パス}"
       ],
       "SparkSubmitParameters": "--conf spark.executor.cores=2 --conf spark.executor.memory=4g --conf spark.driver.memory=2g"
+    }
+  }
+}
+```
+
+
+## EMR Cluster AddStep
+```
+{
+  "ClusterId": "{クラスターID}",
+  "Step": {
+    "Name": "{任意の名前}",
+    "ActionOnFailure": "CONTINUE",
+    "HadoopJarStep": {
+      "Jar": "command-runner.jar",
+      "Args": [
+        "spark-submit",
+        "--master",
+        "yarn",
+        "--deploy-mode",
+        "cluster",
+        "{pythonファイルなどのS3パス}",
+        "--data_source",
+        "{データソースのS3パス}",
+        "--output_uri",
+        "{データ出力S3パス}"
+      ]
     }
   }
 }

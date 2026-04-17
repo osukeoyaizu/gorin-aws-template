@@ -1,0 +1,14 @@
+version: 0.2
+
+phases:
+  install:
+    runtime-versions:
+      python: 3.13
+    commands:
+      - python --version
+
+  build:
+    commands:
+      - echo "Start py_compile for lambda folder"
+      - find lambda -name "*.py" -type f | xargs python3 -m py_compile
+      - echo "py_compile OK"

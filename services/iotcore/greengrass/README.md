@@ -15,6 +15,12 @@ sudo -E java -Droot="/greengrass/v2" -Dlog.store=FILE -jar ./GreengrassInstaller
 
 ## レシピ&アーティファクト作成
 ※artifactsフォルダとrecipesフォルダ作成
+```
+mkdir AWSIoTGreenGrass
+cd AWSIoTGreenGrass
+mkdir artifacts
+mkdir recipes
+```
 
 ### ローカルデプロイ
 **コンポーネント名=com.aws.TempThresholdAnomaly, バージョン=1.0.6**
