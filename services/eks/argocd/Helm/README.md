@@ -25,6 +25,7 @@ metadata:
     alb.ingress.kubernetes.io/healthcheck-path: /healthz
     alb.ingress.kubernetes.io/success-codes: "200"
 spec:
+  ingressClassName: alb
   rules:
     - http:
         paths:

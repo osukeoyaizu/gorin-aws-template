@@ -5,6 +5,9 @@
 - datasyncのVPCエンドポイント作成
     - エンドポイントセキュリティグループ
         - エージェントEC2からの443,111,1024-1064許可
+    
+- NFSサーバーのセキュリティグループ
+    - agentのセキュリティグループからのNFS許可
 
 ### NFSサーバー設定
 #### NFSサーバー起動
@@ -14,7 +17,7 @@ systemctl start nfs-server
 #### /etc/exports編集
 **fsid=0がついているパスが/の扱いになる**
 ```
-/data/src 192.168.1.0/24(rw,sync,no_root_squash,fsid=0)
+/data/src {VPCのCIDR}(rw,sync,no_root_squash,fsid=0)
 ```
 
 #### 設定適用

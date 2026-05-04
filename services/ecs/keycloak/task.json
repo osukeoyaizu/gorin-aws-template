@@ -2,7 +2,7 @@
     "containerDefinitions": [
         {
             "name": "keycloak",
-            "image": "157094121738.dkr.ecr.us-east-1.amazonaws.com/keycloak@sha256:1437c0b410499ef533c6fe80e71013c22d3c9368da15bfdfd9bc06a72ab13da9",
+            "image": "keycloak",
             "cpu": 0,
             "portMappings": [
                 {
@@ -76,23 +76,10 @@
                 }
             ],
             "mountPoints": [],
-            "volumesFrom": [],
-            "logConfiguration": {
-                "logDriver": "awslogs",
-                "options": {
-                    "awslogs-group": "/ecs/keycloak-fargate",
-                    "awslogs-create-group": "true",
-                    "awslogs-region": "us-east-1",
-                    "awslogs-stream-prefix": "ecs"
-                },
-                "secretOptions": []
-            },
-            "systemControls": []
+            "volumesFrom": []
         }
     ],
     "family": "keycloak-fargate",
-    "taskRoleArn": "arn:aws:iam::157094121738:role/ecsTaskExecutionRole",
-    "executionRoleArn": "arn:aws:iam::157094121738:role/ecsTaskExecutionRole",
     "networkMode": "awsvpc",
     "volumes": [],
     "placementConstraints": [],

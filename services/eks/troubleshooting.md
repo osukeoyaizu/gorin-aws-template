@@ -15,3 +15,9 @@ journalctl -u kubelet
 ## Cluster Autoscalerがうまく動かない
 https://repost.aws/ja/knowledge-center/amazon-eks-troubleshoot-autoscaler
 - AGにタグ付けが必要
+
+
+## ingressが消せない
+```
+ kubectl patch ingress <ingress名> -n <名前空間>   -p '{"metadata": {"finalizers": []}}' --type=merge
+```

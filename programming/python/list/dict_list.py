@@ -12,3 +12,5 @@ sort_list = sorted(data_list, key=lambda x: x['Age']) # 昇順
 # 辞書のリストを特定のキーの最大値を取得
 max_age = max(item['Age'] for item in data_list)
 print(max_age)
+
+

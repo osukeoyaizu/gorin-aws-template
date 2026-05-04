@@ -235,6 +235,7 @@ CREATE TABLE network_logs_train (
     label INT  -- 攻撃種別（0～4）
 );
 ```
+#### トレーニングテーブルにデータ登録
 ```
 INSERT INTO network_logs_train
 SELECT
@@ -264,7 +265,7 @@ FROM (
 WHERE seq BETWEEN 1 AND 1000;
 ```
 
-#### 推論用テーブル
+#### 推論用テーブル(ラベルなしのカラム)
 ```
 CREATE TABLE network_logs_test (
     session_id BIGINT,
@@ -275,6 +276,7 @@ CREATE TABLE network_logs_test (
     response_code INT
 );
 ```
+#### 推論用テーブルにデータ登録
 ```
 INSERT INTO network_logs_test VALUES
 (101, '192.168.2.1', '10.0.1.1', 600, 'GET', 200),
@@ -284,7 +286,10 @@ INSERT INTO network_logs_test VALUES
 (105, '192.168.2.5', '10.0.1.5', 150, 'DELETE', 200);
 ```
 #### モデル作成
-※Target列の型はINTやFLOATにする(SELECT内の例:CAST(<ターゲット列> AS FLOAT8))
+- Target列の型はINTやFLOATにする(SELECT内の例:CAST(<ターゲット列> AS FLOAT8))
+- PROBLEM_TYPE を指定しないといけない場合がある
+    - 回帰: REGRESSION
+    - 二値分類: BINARY_CLASSIFICATION
 ```
 CREATE MODEL predict_web_attacks
 FROM (

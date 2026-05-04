@@ -1,4 +1,5 @@
 
+import json
 import boto3
 import os
 
@@ -30,8 +31,9 @@ def query_user_by_key(key, value):
 # Lambdaハンドラー
 def lambda_handler(event, context):
     parameters = {p["name"]: p["value"] for p in event.get("parameters", [])}
-    key = parameters.get("key")
-    value = parameters.get("value")
+    print(parameters)
+    key = 'sample_key'
+    value = parameters.get(key)
 
     print(key)
     print(value)

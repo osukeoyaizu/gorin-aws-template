@@ -32,13 +32,9 @@ aws iam create-role --role-name EMRContainers-JobExecutionRole --assume-role-pol
         {
             "Effect": "Allow",
             "Action": [
-                "s3:PutObject",
-                "s3:GetObject",
-                "s3:ListBucket",
-                "logs:PutLogEvents",
-                "logs:CreateLogStream",
-                "logs:DescribeLogGroups",
-                "logs:DescribeLogStreams"
+                "s3:*",
+                "logs:*",
+                "kms:*"
             ],
             "Resource": "*"
         }
@@ -89,7 +85,7 @@ aws emr-containers create-virtual-cluster \
     "sparkSubmitJobDriver": {
       "entryPoint": "{pythonファイルなどが配置してあるS3パス}",
       "entryPointArguments": ["--data_source", "{データソースのS3パス}", "--output_uri", "{データ出力S3パス}"],  
-       "sparkSubmitParameters": "--class {クラス名} --conf spark.executor.instances=2 --conf spark.executor.memory=2G --conf spark.executor.cores=2 --conf spark.driver.cores=1"
+       "sparkSubmitParameters": "--conf spark.executor.instances=1 --conf spark.executor.memory=1G --conf spark.executor.cores=1 --conf spark.driver.cores=1"
     }
   }, 
   "configurationOverrides": {
@@ -105,7 +101,7 @@ aws emr-containers create-virtual-cluster \
       "persistentAppUI": "ENABLED", 
       "cloudWatchMonitoringConfiguration": {
         "logGroupName": "{ロググループ名}", 
-        "logStreamNamePrefix": "prefix"
+        "logStreamNamePrefix": "{プレフィックス}"
       }, 
       "s3MonitoringConfiguration": {
         "logUri": "{ログ出力S3パス}"

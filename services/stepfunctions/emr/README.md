@@ -47,6 +47,49 @@ API パラメータ
 ```
 
 
+## EMR on EKS StartJobRun
+```
+{
+  "Name": "job1",
+  "VirtualClusterId": "{仮想クラスターID}",
+  "ExecutionRoleArn": "arn:aws:iam::{アカウントID}:role/EMRContainers-JobExecutionRole",
+  "ReleaseLabel": "emr-6.2.0-latest",
+  "JobDriver": {
+    "SparkSubmitJobDriver": {
+      "EntryPoint": "{pythonファイルなどが配置してあるS3パス}",
+      "EntryPointArguments": [
+        "--data_source",
+        "{データソースのS3パス}",
+        "--output_uri",
+        "{データ出力S3パス}"
+      ],
+      "SparkSubmitParameters": "--conf spark.executor.instances=1 --conf spark.executor.memory=1G --conf spark.executor.cores=1 --conf spark.driver.cores=1"
+    }
+  },
+  "ConfigurationOverrides": {
+    "ApplicationConfiguration": [
+      {
+        "Classification": "spark-defaults",
+        "Properties": {
+          "spark.driver.memory": "2G"
+        }
+      }
+    ],
+    "MonitoringConfiguration": {
+      "PersistentAppUI": "ENABLED",
+      "CloudWatchMonitoringConfiguration": {
+        "LogGroupName": "{ロググループ名}",
+        "LogStreamNamePrefix": "{プレフィックス}"
+      },
+      "S3MonitoringConfiguration": {
+        "LogUri": "{ログ出力S3パス}"
+      }
+    }
+  }
+}
+```
+
+
 ## エラー処理
 ### Lambdaがカスタムエラーを返す
 ```

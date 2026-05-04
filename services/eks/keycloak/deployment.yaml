@@ -24,7 +24,7 @@ spec:
                       - keycloak
       containers:
         - name: keycloak-app
-          image: 549209747641.dkr.ecr.us-east-1.amazonaws.com/keycloak:latest
+          image: 549209747641.dkr.ecr.us-east-1.amazonaws.com/keycloak:latest  # コンテナイメージURL 
           imagePullPolicy: Always
           command:
             - /opt/keycloak/bin/kc.sh
@@ -46,13 +46,13 @@ spec:
             - name: KC_DB
               value: postgres
             - name: KC_DB_USERNAME
-              value: postgres
+              value: postgres  # エンジン
             - name: KC_DB_PASSWORD
               value: password
             - name: KC_DB_URL_HOST
               value: keycloak.cluster-cm5eeaqmqanh.us-east-1.rds.amazonaws.com
             - name: KC_DB_URL_PORT
-              value: "10540"
+              value: "5432"
             - name: KC_DB_URL_DATABASE
               value: keycloak
             - name: KC_DB_SCHEMA
@@ -72,7 +72,7 @@ spec:
             # Hostname / URL 設定
             # ============================
             - name: KC_HOSTNAME
-              value: keycloak.oyaizu.gorin.toro.toyota
+              value: keycloak.oyaizu.gorin.toro.toyota # アクセスするホスト名
             - name: KC_HOSTNAME_STRICT
               value: "false"
 

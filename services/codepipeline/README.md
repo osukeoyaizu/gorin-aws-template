@@ -5,7 +5,7 @@
 関数名:検証用Lambda
 
 ### Lambda関数(検証用)
-```
+```python
 import json
 import os
 import boto3

@@ -70,3 +70,15 @@ echo "StorageGateway Test 1" | sudo tee test1.txt
 echo "StorageGateway Test 2" | sudo tee test2.txt
 echo "StorageGateway Test 3" | sudo tee test3.txt
 ```
+
+### セッション削除
+```
+# マウント解除
+umount /mnt/xxx
+
+# iSCSI セッション確認
+iscsiadm -m session
+
+# ログアウト
+iscsiadm -m node -T ターゲット名 -p IPアドレス --logout
+```
